@@ -3,7 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 import colors from "colors";
 import dotenv from "dotenv";
-import connectDb from "./Db/Db.js";
+import mongoose from "mongoose";
 
 dotenv.config();
 
@@ -20,14 +20,18 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // Database Connection
-connectDb()
-  .then(() => {
-    console.log("Database connected successfully".green);
-  })
-  .catch(error => {
-    console.error("Database connection failed".red, error);
+const connectDb = async () => {
+  try {
+    const connect = await mongoose.connect(process.env.MONGO_URI || "mongodb+srv://ASP:ASP123@spyzy.cr7opeb.mongodb.net/nodejs");
+    console.log("Database connected successfully".bgMagenta.green);
+  } catch (error) {
+    console.error("Database connection failed".bgBlue.red, error);
     process.exit(1); // Exit process with failure
-  });
+  }
+};
+
+// Call the function to connect to the database
+connectDb();
 
 // Test Route
 app.get('/', (req, res) => {
@@ -48,4 +52,3 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Listening to port number ${PORT}`.bgCyan.blue);
 });
-//hello
