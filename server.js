@@ -4,7 +4,7 @@ import morgan from "morgan";
 import colors from "colors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-
+import authRoutes from "../ApiCallingNode/MVC/Route/authRout.js"
 dotenv.config();
 
 const app = express();
@@ -13,8 +13,8 @@ const PORT = process.env.PORT || 8000;
 // Middleware
 app.use(cors({
   origin: 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], 
-  credentials: true, // Enable if your requests require credentials (e.g., cookies)
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
 }));
 app.use(morgan('dev'));
 app.use(express.json());
@@ -22,11 +22,11 @@ app.use(express.json());
 // Database Connection
 const connectDb = async () => {
   try {
-    const connect = await mongoose.connect(process.env.MONGO_URI || "mongodb+srv://ASP:ASP123@spyzy.cr7opeb.mongodb.net/nodejs");
+    await mongoose.connect(process.env.MONGO_URI || "mongodb+srv://ASP:ASP123@spyzy.cr7opeb.mongodb.net/nodejs");
     console.log("Database connected successfully".bgMagenta.green);
   } catch (error) {
     console.error("Database connection failed".bgBlue.red, error);
-    process.exit(1); // Exit process with failure
+    process.exit(1);
   }
 };
 
@@ -41,7 +41,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-//app.use('/api/v1/user', authRout);
+app.use('/api/v1/user', authRoutes); // Correct route path
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
