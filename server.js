@@ -74,6 +74,20 @@ app.post('/register', async (req, res) => {
   }
 });
 
+// New GET API to fetch all users
+app.get('/users', async (req, res) => {
+  try {
+    const users = await User.find(); // Fetch all users from the database
+    res.status(200).json({
+      status: 'success',
+      users,
+    });
+  } catch (error) {
+    console.error(`Error fetching users: ${error}`);
+    res.status(500).send('Internal server error');
+  }
+});
+
 // Test Route
 app.get('/', (req, res) => {
   res.send({
