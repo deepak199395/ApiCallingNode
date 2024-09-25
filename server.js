@@ -3,6 +3,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs'; // To hash and compare passwords
+import jwt from 'jsonwebtoken'; // To generate a token for user authentication
 
 // Initialize environment variables
 dotenv.config();
@@ -44,7 +46,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-// Define the /register route directly in server.js
+// Register API
 app.post('/register', async (req, res) => {
   try {
     const { name, lastname, email, phone, password } = req.body;
@@ -60,8 +62,17 @@ app.post('/register', async (req, res) => {
       return res.status(400).send("User already exists");
     }
 
+    // Hash the password before saving it to the database
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create new user
-    const newUser = await User.create({ name, lastname, email, phone, password });
+    const newUser = await User.create({ 
+      name, 
+      lastname, 
+      email, 
+      phone, 
+      password: hashedPassword // Save the hashed password
+    });
 
     res.status(201).send({
       status: 'success',
@@ -84,6 +95,51 @@ app.get('/users', async (req, res) => {
     });
   } catch (error) {
     console.error(`Error fetching users: ${error}`);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Login API
+app.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).send("Email and password are required");
+    }
+
+    // Check if the user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).send("User not found");
+    }
+
+    // Compare the provided password with the hashed password in the database
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).send("Invalid password");
+    }
+
+    // Generate a token (optional, but recommended for authentication)
+    const token = jwt.sign(
+      { userId: user._id, email: user.email }, 
+      process.env.JWT_SECRET || 'your_jwt_secret', 
+      { expiresIn: '1h' } // Token expires in 1 hour
+    );
+
+    res.status(200).send({
+      status: 'success',
+      message: 'Login successful',
+      token, // Send the token to the frontend to store (usually in localStorage or cookies)
+      user: {
+        name: user.name,
+        lastname: user.lastname,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error(`Error in login route: ${error}`);
     res.status(500).send('Internal server error');
   }
 });
