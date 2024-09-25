@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // Register API
-app.post('/register', async (req, res) => {
+app.post('/v1/user/register', async (req, res) => {
   try {
     const { name, lastname, email, phone, password } = req.body;
 
@@ -86,7 +86,7 @@ app.post('/register', async (req, res) => {
 });
 
 // New GET API to fetch all users
-app.get('/users', async (req, res) => {
+app.get('/v1/getuser/users', async (req, res) => {
   try {
     const users = await User.find(); // Fetch all users from the database
     res.status(200).json({
@@ -100,7 +100,7 @@ app.get('/users', async (req, res) => {
 });
 
 // Login API
-app.post('/login', async (req, res) => {
+app.post('/v1/user/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
