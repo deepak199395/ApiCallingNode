@@ -55,6 +55,7 @@ app.post('/v1/user/register', async (req, res) => {
       if (!name || !lastname || !email || !phone || !password) {
         return res.status(400).json({
           status: 'fail',
+          flag:'n',
           message: 'All fields are required',
         });
       }
@@ -64,6 +65,7 @@ app.post('/v1/user/register', async (req, res) => {
       if (existingUser) {
         return res.status(400).json({
           status: 'fail',
+          flag:'n',
           message: 'User already exists',
         });
       }
@@ -82,6 +84,7 @@ app.post('/v1/user/register', async (req, res) => {
   
       res.status(201).json({
         status: 'success',
+        flag:"y",
         message: 'User registered successfully',
         data: { user: newUser },
       });
@@ -89,6 +92,7 @@ app.post('/v1/user/register', async (req, res) => {
       console.error(`Error in register route: ${error.message}`);
       res.status(500).json({
         status: 'error',
+        flag:'n',
         message: 'An error occurred during user registration',
         error: error.message,
       });
@@ -104,12 +108,14 @@ app.get('/v1/getuser/users', async (req, res) => {
       if (users.length === 0) {
         return res.status(404).json({
           status: 'fail',
+          flag:'n',
           message: 'No users found',
         });
       }
   
       res.status(200).json({
         status: 'success',
+        flag:'y',
         message: 'Users retrieved successfully',
         data: { users },
       });
@@ -134,6 +140,7 @@ app.post('/v1/user/login', async (req, res) => {
       if (!email || !password) {
         return res.status(400).json({
           status: 'fail',
+          flag:'n',
           message: 'Email and password are required',
         });
       }
@@ -143,6 +150,7 @@ app.post('/v1/user/login', async (req, res) => {
       if (!user) {
         return res.status(404).json({
           status: 'fail',
+          flag:'n',
           message: 'User not found',
         });
       }
@@ -152,6 +160,7 @@ app.post('/v1/user/login', async (req, res) => {
       if (!isPasswordValid) {
         return res.status(400).json({
           status: 'fail',
+          flag:'n',
           message: 'Invalid password',
         });
       }
@@ -165,6 +174,7 @@ app.post('/v1/user/login', async (req, res) => {
   
       res.status(200).json({
         status: 'success',
+        flag:'y',
         message: 'Login successful',
         token, // Send the token to the frontend to store (e.g., in localStorage or cookies)
         user: {
