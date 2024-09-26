@@ -48,101 +48,141 @@ const User = mongoose.model('User', userSchema);
 
 // Register API
 app.post('/v1/user/register', async (req, res) => {
-  try {
-    const { name, lastname, email, phone, password } = req.body;
-
-    // Validation
-    if (!name || !lastname || !email || !phone || !password) {
-      return res.status(400).send("All fields are required");
+    try {
+      const { name, lastname, email, phone, password } = req.body;
+  
+      // Validation
+      if (!name || !lastname || !email || !phone || !password) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'All fields are required',
+        });
+      }
+  
+      // Check if the user already exists
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'User already exists',
+        });
+      }
+  
+      // Hash the password before saving it to the database
+      const hashedPassword = await bcrypt.hash(password, 10);
+  
+      // Create new user
+      const newUser = await User.create({ 
+        name, 
+        lastname, 
+        email, 
+        phone, 
+        password: hashedPassword // Save the hashed password
+      });
+  
+      res.status(201).json({
+        status: 'success',
+        message: 'User registered successfully',
+        data: { user: newUser },
+      });
+    } catch (error) {
+      console.error(`Error in register route: ${error.message}`);
+      res.status(500).json({
+        status: 'error',
+        message: 'An error occurred during user registration',
+        error: error.message,
+      });
     }
-
-    // Check if the user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).send("User already exists");
-    }
-
-    // Hash the password before saving it to the database
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user
-    const newUser = await User.create({ 
-      name, 
-      lastname, 
-      email, 
-      phone, 
-      password: hashedPassword // Save the hashed password
-    });
-
-    res.status(201).send({
-      status: 'success',
-      message: 'User registered successfully',
-      user: newUser,
-    });
-  } catch (error) {
-    console.error(`Error in register route: ${error}`);
-    res.status(500).send('Internal server error');
-  }
-});
+  });
+  
 
 // New GET API to fetch all users
 app.get('/v1/getuser/users', async (req, res) => {
-  try {
-    const users = await User.find(); // Fetch all users from the database
-    res.status(200).json({
-      status: 'success',
-      users,
-    });
-  } catch (error) {
-    console.error(`Error fetching users: ${error}`);
-    res.status(500).send('Internal server error');
-  }
-});
+    try {
+      const users = await User.find(); // Fetch all users from the database
+      
+      if (users.length === 0) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No users found',
+        });
+      }
+  
+      res.status(200).json({
+        status: 'success',
+        message: 'Users retrieved successfully',
+        data: { users },
+      });
+    } catch (error) {
+      console.error(`Error fetching users: ${error.message}`);
+      
+      res.status(500).json({
+        status: 'error',
+        message: 'An error occurred while fetching users',
+        error: error.message,
+      });
+    }
+  });
+  
 
 // Login API
 app.post('/v1/user/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).send("Email and password are required");
+    try {
+      const { email, password } = req.body;
+  
+      // Validate input
+      if (!email || !password) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'Email and password are required',
+        });
+      }
+  
+      // Check if the user exists
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'User not found',
+        });
+      }
+  
+      // Compare the provided password with the hashed password in the database
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'Invalid password',
+        });
+      }
+  
+      // Generate a token (optional, but recommended for authentication)
+      const token = jwt.sign(
+        { userId: user._id, email: user.email }, 
+        process.env.JWT_SECRET || 'your_jwt_secret', 
+        { expiresIn: '1h' } // Token expires in 1 hour
+      );
+  
+      res.status(200).json({
+        status: 'success',
+        message: 'Login successful',
+        token, // Send the token to the frontend to store (e.g., in localStorage or cookies)
+        user: {
+          name: user.name,
+          lastname: user.lastname,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      console.error(`Error in login route: ${error.message}`);
+      res.status(500).json({
+        status: 'error',
+        message: 'An error occurred during login',
+        error: error.message,
+      });
     }
-
-    // Check if the user exists
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).send("User not found");
-    }
-
-    // Compare the provided password with the hashed password in the database
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).send("Invalid password");
-    }
-
-    // Generate a token (optional, but recommended for authentication)
-    const token = jwt.sign(
-      { userId: user._id, email: user.email }, 
-      process.env.JWT_SECRET || 'your_jwt_secret', 
-      { expiresIn: '1h' } // Token expires in 1 hour
-    );
-
-    res.status(200).send({
-      status: 'success',
-      message: 'Login successful',
-      token, // Send the token to the frontend to store (usually in localStorage or cookies)
-      user: {
-        name: user.name,
-        lastname: user.lastname,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    console.error(`Error in login route: ${error}`);
-    res.status(500).send('Internal server error');
-  }
-});
+  });
+  
 
 // Test Route
 app.get('/', (req, res) => {
